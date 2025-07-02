@@ -60,7 +60,7 @@ def tpa(cunknown_tri, x, r, Thresh, delta_tpa, w):
 
     k = 0
     beta_c = 0.5
-    scaling = 3
+    scaling = 1
 
     for i in range(r//scaling):
         lam = 0

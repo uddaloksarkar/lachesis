@@ -2,33 +2,37 @@ import numpy as np
 import math
 import random
 from samplers.binomial import BinomialDistribution
-from math import sqrt as _sqrt, log2 as _log2
-from tester import compute_H_from_inverse, intcond
+from math import sqrt as _sqrt, log2 as _log2, log as _log
+from tester import intcond
 
-def getBias(unknown, k_low, k_high, zeta_prime, pivot, which_side):
+def getBias(unknown, k_low, k_high, maxHeads, pivot, is_pivot_smaller):
     
     head = 0
-    tot = int(1/zeta_prime**2)
-    for i in range(tot):
+    tot = 0
+    # print(f"Total heads for bias estimation: {maxHeads}")
+    while head < maxHeads:
         sample = intcond(unknown, k_low, k_high)
-        if sample > pivot and which_side:
-            count += 1
-        elif sample < pivot and not which_side:
-            count += 1
-    bias = count / tot
+        if sample > pivot and is_pivot_smaller:
+            head += 1
+        elif sample < pivot and not is_pivot_smaller:
+            head += 1
+        tot += random.expovariate(1)
+    bias = (head-1) / tot
     return bias
 
-def Est(unknown, x, zeta, delta_Est, B, w):
+def Est(unknown, x, zeta, delta_Est):
     
     n = unknown.n
-
     k_low = 0
     k_high = n
     prob = 1
 
-    while k_low == x or k_high == x:
+    maxHeads = 3 * _log(n) / zeta**2 * math.log(2 * _log(n) / delta_Est)
+
+    while k_low != x and k_high != x:
+        # print(k_high, k_low, x)
         pivot = k_low + (k_high - k_low) // 2
-        bias = getBias(unknown, k_low, k_high, zeta/_sqrt(_log2(n)), pivot, pivot<x)
+        bias = getBias(unknown, k_low, k_high, maxHeads, pivot, pivot<x)
         prob *= bias
         if pivot < x:
             k_low = pivot
@@ -40,8 +44,9 @@ def Est(unknown, x, zeta, delta_Est, B, w):
 
 def baseline(unknown_sampler, known_sampler, eps, eta, delta, w):
     
-    zeta = (eta - eps) / (eta - eps + 2)
-    t = int((8 / ((eta - eps) ** 2)) * np.log(4 / delta))
+    zeta = (eta - eps) / 2
+    gamma  = zeta / (1.11 * (2 + zeta))
+    t = int((2 / (zeta ** 2)) * np.log(4 / delta))
     t = 100 # For testing purposes, set t to a small value
     u_low = -0.5; u_high = 0.5
     
@@ -55,10 +60,8 @@ def baseline(unknown_sampler, known_sampler, eps, eta, delta, w):
         if known_prob == 0:
             # Avoid log(0) issues
             return "reject"
-
-        B = math.log((1 + 2 * eps) / known_prob)
         
-        pest = Est(unknown_sampler, x_i, zeta, delta / (4 * t))
+        pest = Est(unknown_sampler, x_i, gamma, delta / (2 * t))
 
         print(f"Sample {i}: x_i = {x_i}, known_prob = {known_prob}, Estimated Mass = {pest}")
         
@@ -79,9 +82,9 @@ def baseline(unknown_sampler, known_sampler, eps, eta, delta, w):
 
 if __name__=='__main__':
 
-    p_unk = 0.42
+    p_unk = 0.4
     p_known = 0.4
-    n = 40
+    n = 100
     w = 10
     eps = 0.01
     eta = 0.5
