@@ -2,6 +2,8 @@ import numpy as np
 import math
 import random
 from samplers.binomial import BinomialDistribution
+from samplers.poisson import PoissonDistribution
+from samplers.geometric import GeometricDistribution
 
 #sampler requirements
 
@@ -40,6 +42,7 @@ def intcond(unknown, u, v):
     u_low = compute_H_from_inverse(unknown.hat_cdf_inv, u)
     u_high = compute_H_from_inverse(unknown.hat_cdf_inv, v)
     if u_low > u_high:
+        print(f"Invalid range: u_low={u_low}, u_high={u_high} for u={u}, v={v}")
         return None  # Invalid range
     return unknown.sample(u_low, u_high)
 
@@ -54,6 +57,7 @@ def cintcond(unknown, u, v, delta_intcond, w):
         if u <= z <= v:
             return z
 
+    print(f"Failed to sample in range [{u}, {v}] after {T} attempts.")
     return None  # ⊥ if rejection fails
 
 def tpa(cunknown_tri, x, r, Thresh, delta_tpa, w):
@@ -64,20 +68,21 @@ def tpa(cunknown_tri, x, r, Thresh, delta_tpa, w):
 
     for i in range(r//scaling):
         lam = 0
-        beta = n  # Initialize beta to maximum range
+        beta = math.inf  # Initialize beta to maximum range
 
         # print(f"Starting TPA iteration {i} with x={x}, r={r}, Thresh={Thresh}, delta_tpa={delta_tpa}, w={w}")
 
         while beta > beta_c:
             lam += 1
             u = max(0, x - beta)
-            v = min(n, x + beta)
+            v = min(math.inf, x + beta)
 
             # print(f"Iteration {lam}: u={u}, v={v}, beta={beta}")
 
             sample = cintcond(cunknown_tri, u, v, delta_tpa / (r * Thresh), w)
 
             if sample is None or lam >= Thresh:
+                print(f"TPA iteration {lam} failed: sample={sample}, beta={beta}")
                 return None
 
             beta = abs(sample - x)
@@ -96,6 +101,7 @@ def Est(unknown, x, zeta, delta_Est, B, w):
 
     lambda_ = tpa(unknown, x, r1, Thresh, delta_Est / 4, w)
     if lambda_ is None:
+        print("r1: TPA failed to return a valid lambda.")
         return None
     
     logz = math.log(1 + zeta)
@@ -109,6 +115,7 @@ def Est(unknown, x, zeta, delta_Est, B, w):
     Thresh = B + log_term + math.sqrt(log_term ** 2 + 2 * B * log_term)
     lambda_ = tpa(unknown, x, r2, Thresh, delta_Est / 4, w)
     if lambda_ is None:
+        print("r2: TPA failed to return a valid lambda.")
         return None
     
     return math.exp(-lambda_)
@@ -155,16 +162,37 @@ def infident(unknown_sampler, known_sampler, eps, eta, delta, w):
 
 if __name__=='__main__':
 
-    p_unk = 0.43
+    # Example usage for testing
+
+    # # Binomial
+    # p_unk = 0.4
+    # p_known = 0.4
+    # n = 100
+    # w = n * (1 - p_known) / p_known  # maximum ratio for Binomial
+    # print("w:", w)
+    # unknown_sampler = BinomialDistribution(n, p_unk)
+    # known_sampler = BinomialDistribution(n, p_known)
+
+    # Poisson
+    # lambd_unk = 40
+    # lambd_known = 40
+    # w = lambd_known
+    # print("w:", w)
+    # unknown_sampler = PoissonDistribution(lambd_unk)
+    # known_sampler = PoissonDistribution(lambd_known)
+
+    # Geometric
+    p_unk = 0.4
     p_known = 0.4
-    n = 100
-    w = (n - p_known +1) / (1- p_known) * p_known / (1 - p_known)
+    w = 1 / (1- p_known)  # maximum ratio for Geometric
+    print("w:", w)
+    unknown_sampler = GeometricDistribution(p_unk)
+    known_sampler = GeometricDistribution(p_known)
+
+
+    # Run the Infident algorithm
     eps = 0.01
     eta = 0.5
     delta = 0.05
-
-    unknown_sampler = BinomialDistribution(n, p_unk)
-    known_sampler = BinomialDistribution(n, p_known)
-
     result = infident(unknown_sampler, known_sampler, eps, eta, delta, w)
     print("Result:", result)

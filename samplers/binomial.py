@@ -5,6 +5,7 @@ from math import sqrt as _sqrt
 from math import tau as TWOPI, floor as _floor, isfinite as _isfinite
 from math import lgamma as _lgamma, fabs as _fabs, log2 as _log2
 from operator import index as _index
+import matplotlib.pyplot as plt  # Add this import for plotting
 
 
 class BinomialDistribution:
@@ -36,14 +37,14 @@ class BinomialDistribution:
         vr = 0.92 - 4.2 / b
 
         while True:
-            u = uniform(u_low, u_high)
-            us = 0.5 - abs(u)
-            k = math.floor((2.0 * a / us + b) * u + c)
+            U= uniform(u_low, u_high)
+            us = 0.5 - abs(U)
+            k = math.floor((2 * a / us + b) * U + c)
             if k < 0 or k > n:
                 continue
 
-            v = uniform(0, 1)
-            if us >= 0.07 and v <= vr:
+            V = uniform(0, 1)
+            if us >= 0.07 and V <= vr:
                 return k
 
             if not self._setup_complete:
@@ -53,8 +54,8 @@ class BinomialDistribution:
                 self._h = math.lgamma(self._m + 1) + math.lgamma(n - self._m + 1)
                 self._setup_complete = True
 
-            v *= self._alpha / (a / (us * us) + b)
-            lhs = math.log(v)
+            V *= self._alpha / (a / (us * us) + b)
+            lhs = math.log(V)
             rhs = (
                 self._h
                 - math.lgamma(k + 1)
@@ -79,3 +80,33 @@ class BinomialDistribution:
         l2 = 1.15 + 2.53 * spq
         l3 = self.n * self.p + 0.5
         return (2 * l1 / (0.5 - abs(u)) + l2) * u + l3
+
+    def _histogram(self, n_samp=100):
+        """Generate a histogram of the Poisson distribution."""    
+        hist = {}
+        for _ in range(n_samp):
+            sample = self.sample()
+            hist[sample] = hist.get(sample, 0) + 1
+        total_samples = sum(hist.values())
+        for k in hist:
+            hist[k] /= total_samples
+        return hist
+    
+    def __test__(self, n_samp=100):
+        """Plot the histogram of the Binomial distribution."""
+        hist = self._histogram(n_samp)
+        keys = sorted(hist.keys())
+        values = [hist[k] for k in keys]
+        plt.bar(keys, values, width=0.8, color='green', alpha=0.7)
+        plt.title(f"Binomial Distribution (n={self.n}, p={self.p})")
+        plt.xlabel("k")
+        plt.ylabel("Probability")
+        plt.show()
+
+
+if __name__ == "__main__":
+    # Example usage for testing
+    n = 1000  # Set n for Binomial distribution
+    p = 0.02  # Set probability for Binomial distribution
+    binomial = BinomialDistribution(n, p)
+    binomial.__test__(n_samp=100000)  # Plot histogram with 100,000 samples
