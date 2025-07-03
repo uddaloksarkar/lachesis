@@ -6,7 +6,6 @@ from samplers.binomial import BinomialDistribution
 from samplers.poisson import PoissonDistribution
 from samplers.geometric import GeometricDistribution
 
-#sampler requirements
 
 def compute_H_from_inverse(H_inv, k, lo=-0.5, hi=0.5, tol=1e-6):
     """
@@ -50,22 +49,23 @@ def intcond(unknown, u, v):
 def cintcond(unknown, u, v, delta_intcond, w):
     T = int((2 * w + 1) * math.log(1 / delta_intcond)) * 2
     
-    for _ in range(T):
+    for i in range(T):
         x = intcond(unknown, u, v)  # Sample from unknown | [u, v]
         r = sample_triangle()      # Sample from tri_w
         
         z = x + r
         if u <= z <= v:
-            return z
+            return z, i
 
     print(f"Failed to sample in range [{u}, {v}] after {T} attempts.")
-    return None  # ⊥ if rejection fails
+    return None, T  # ⊥ if rejection fails
 
 def tpa(cunknown_tri, x, r, Thresh, delta_tpa, w):
 
     k = 0
     beta_c = 0.5
     scaling = 1
+    _ncalls = 0
 
     for i in range(r//scaling):
         lam = 0
@@ -80,11 +80,12 @@ def tpa(cunknown_tri, x, r, Thresh, delta_tpa, w):
 
             # print(f"Iteration {lam}: u={u}, v={v}, beta={beta}")
 
-            sample = cintcond(cunknown_tri, u, v, delta_tpa / (r * Thresh), w)
+            sample, _calls = cintcond(cunknown_tri, u, v, delta_tpa / (r * Thresh), w)
+            _ncalls += _calls
 
             if sample is None or lam >= Thresh:
                 print(f"TPA iteration {lam} failed: sample={sample}, beta={beta}")
-                return None
+                return None, _ncalls
 
             beta = abs(sample - x)
 
@@ -92,7 +93,7 @@ def tpa(cunknown_tri, x, r, Thresh, delta_tpa, w):
 
         # print(f"TPA iteration {lam} completed: k={k}, beta={beta}")
 
-    return k / r * scaling
+    return k / r * scaling, _ncalls
 
 def Est(unknown, x, zeta, delta_Est, B, w):
     
@@ -100,10 +101,10 @@ def Est(unknown, x, zeta, delta_Est, B, w):
     log_term = math.log((2 * r1) / delta_Est)    
     Thresh = B + log_term + math.sqrt(log_term ** 2 + 2 * B * log_term)
 
-    lambda_ = tpa(unknown, x, r1, Thresh, delta_Est / 4, w)
+    lambda_, _ncalls1 = tpa(unknown, x, r1, Thresh, delta_Est / 4, w)
     if lambda_ is None:
         print("r1: TPA failed to return a valid lambda.")
-        return None
+        return None, _ncalls1
     
     logz = math.log(1 + zeta)
     r2 = int(
@@ -114,22 +115,24 @@ def Est(unknown, x, zeta, delta_Est, B, w):
     
     log_term = math.log((2 * r2) / delta_Est)   
     Thresh = B + log_term + math.sqrt(log_term ** 2 + 2 * B * log_term)
-    lambda_ = tpa(unknown, x, r2, Thresh, delta_Est / 4, w)
+    lambda_, _ncalls2 = tpa(unknown, x, r2, Thresh, delta_Est / 4, w)
     if lambda_ is None:
         print("r2: TPA failed to return a valid lambda.")
-        return None
+        return None, _ncalls1 + _ncalls2
     
-    return math.exp(-lambda_)
+    return math.exp(-lambda_), _ncalls1 + _ncalls2
 
 def infident(unknown_sampler, known_sampler, eps, eta, delta, w):
     
     zeta = (eta - eps) / (eta - eps + 2)
     w_prime = ((1 + 2 * eps) / (1 - 2 * eps)) * w
     t = int((8 / ((eta - eps) ** 2)) * np.log(4 / delta))
-    t = 100 # For testing purposes, set t to a small value
-    
+    # t = 100 # For testing purposes, set t to a small value
+    print(f"Number of samples (t): {t}")
+
     samples = [unknown_sampler.sample() for _ in range(t)]
     pest_values = []
+    _ncalls = 0
 
     for i in range(t):
         print(f"Doing Sample {i}: {samples[i]}")
@@ -138,16 +141,17 @@ def infident(unknown_sampler, known_sampler, eps, eta, delta, w):
         if known_prob == 0:
             # Avoid log(0) issues
             print(f"Sample {i}: known_prob is 0 for x_i = {x_i}. Something is off! Rejecting the Sampler.")
-            return "reject"
+            return "reject", _ncalls
 
         B = math.log((1 + 2 * eps) / known_prob)
         
-        pest = Est(unknown_sampler, x_i, zeta, delta / (4 * t), B, w_prime)
+        pest, _calls = Est(unknown_sampler, x_i, zeta, delta / (4 * t), B, w_prime)
+        _ncalls += _calls
 
         print(f"Sample {i}: x_i = {x_i}, known_prob = {known_prob}, Estimated Mass = {pest}")
         
         if pest is None:
-            return "reject"
+            return "reject", _ncalls
         
         pest_values.append((x_i, pest))
 
@@ -156,9 +160,9 @@ def infident(unknown_sampler, known_sampler, eps, eta, delta, w):
     print(f"Estimated TV distance: {dest}")
 
     if dest > (eta + eps) / 2:
-        return "reject"
+        return "reject", _ncalls
     else:
-        return "accept"
+        return "accept", _ncalls
 
 
 if __name__ == '__main__':
@@ -205,5 +209,8 @@ if __name__ == '__main__':
     print(f"Parameters: {params}")
     print(f"eps: {eps}, eta: {eta}, delta: {delta}, w: {w}")
 
-    result = infident(unknown_sampler, known_sampler, eps, eta, delta, w)
-    print("Result:", result)
+    result, _ncalls = infident(unknown_sampler, known_sampler, eps, eta, delta, w)
+    print("Result:", result, "Number of calls:", _ncalls)
+
+#514740
+#28545592
