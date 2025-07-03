@@ -2,7 +2,7 @@ import math
 import random
 from math import log as _log, exp as _exp, pi as _pi, e as _e, ceil as _ceil
 from math import sqrt as _sqrt
-from math import tau as TWOPI, floor as _floor, isfinite as _isfinite
+from math import floor as _floor, isfinite as _isfinite
 from math import lgamma as _lgamma, fabs as _fabs, log2 as _log2
 from operator import index as _index
 import matplotlib.pyplot as plt  # Add this import for plotting
@@ -14,11 +14,11 @@ class GeometricDistribution:
             raise ValueError("Probability p must be in (0, 1]")
         self.p = p
 
-    def sample(self, u_low=0, u_high=1):
+    def sample(self, u_low=-0.5, u_high=0.5):
         """Sample from the Geometric distribution."""
         uniform = random.uniform
-        U = uniform(u_low, u_high)
-        return math.ceil(math.log(1 - U) / math.log(1 - self.p))
+        U = uniform(u_low, u_high) 
+        return math.ceil(_log(0.5 - U) / _log(1 - self.p))
 
     def pmf(self, k):
         """Probability Mass Function for Geometric distribution."""
@@ -28,7 +28,7 @@ class GeometricDistribution:
 
     def hat_cdf_inv(self, u):
         """Inverse CDF for Geometric distribution."""
-        return math.ceil(math.log(1 - u) / math.log(1 - self.p))
+        return math.ceil(_log(0.5 - u) / _log(1 - self.p))
 
     def _histogram(self, n_samp=100):
         """Generate a histogram of the Geometric distribution."""

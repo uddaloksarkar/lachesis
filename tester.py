@@ -1,3 +1,4 @@
+import argparse
 import numpy as np
 import math
 import random
@@ -29,8 +30,8 @@ def compute_H_from_inverse(H_inv, k, lo=-0.5, hi=0.5, tol=1e-6):
     return (lo + hi) / 2
 
 def sample_triangle():
-    r1 = random.uniform(-1, 1)  # Sample from [-1, 1]
-    r2 = random.uniform(-1, 1)  # Sample from [-1, 1]
+    r1 = random.uniform(-0.5, 0.5)  # Sample from [-1, 1]
+    r2 = random.uniform(-0.5, 0.5)  # Sample from [-1, 1]
     return r1 + r2
 
 def intcond(unknown, u, v):
@@ -47,7 +48,7 @@ def intcond(unknown, u, v):
     return unknown.sample(u_low, u_high)
 
 def cintcond(unknown, u, v, delta_intcond, w):
-    T = int((2 * w + 1) * math.log(1 / delta_intcond))
+    T = int((2 * w + 1) * math.log(1 / delta_intcond)) * 2
     
     for _ in range(T):
         x = intcond(unknown, u, v)  # Sample from unknown | [u, v]
@@ -126,9 +127,8 @@ def infident(unknown_sampler, known_sampler, eps, eta, delta, w):
     w_prime = ((1 + 2 * eps) / (1 - 2 * eps)) * w
     t = int((8 / ((eta - eps) ** 2)) * np.log(4 / delta))
     t = 100 # For testing purposes, set t to a small value
-    u_low = -1; u_high = 1
     
-    samples = [unknown_sampler.sample(u_low, u_high) for _ in range(t)]
+    samples = [unknown_sampler.sample() for _ in range(t)]
     pest_values = []
 
     for i in range(t):
@@ -137,6 +137,7 @@ def infident(unknown_sampler, known_sampler, eps, eta, delta, w):
         known_prob = known_sampler.pmf(x_i)
         if known_prob == 0:
             # Avoid log(0) issues
+            print(f"Sample {i}: known_prob is 0 for x_i = {x_i}. Something is off! Rejecting the Sampler.")
             return "reject"
 
         B = math.log((1 + 2 * eps) / known_prob)
@@ -160,39 +161,49 @@ def infident(unknown_sampler, known_sampler, eps, eta, delta, w):
         return "accept"
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Run the Infident algorithm with a specified distribution.")
+    parser.add_argument("distribution", choices=["binomial", "poisson", "geometric"], help="Type of distribution to use.")
+    parser.add_argument("--params", nargs="+", type=float, required=True, help="Parameters for the chosen distribution.")
+    parser.add_argument("--eps", type=float, default=0.01, help="Epsilon value for Infident.")
+    parser.add_argument("--eta", type=float, default=0.5, help="Eta value for Infident.")
+    parser.add_argument("--delta", type=float, default=0.05, help="Delta value for Infident.")
+    args = parser.parse_args()
 
-    # Example usage for testing
+    distribution = args.distribution
+    params = args.params
+    eps = args.eps
+    eta = args.eta
+    delta = args.delta
 
-    # # Binomial
-    # p_unk = 0.4
-    # p_known = 0.4
-    # n = 100
-    # w = n * (1 - p_known) / p_known  # maximum ratio for Binomial
-    # print("w:", w)
-    # unknown_sampler = BinomialDistribution(n, p_unk)
-    # known_sampler = BinomialDistribution(n, p_known)
+    if distribution == "binomial":
+        if len(params) != 4:
+            raise ValueError("Binomial distribution requires 4 parameters: n_unknown, p_unknown, n_known, p_known.")
+        n_unk, p_unk, n_kn, p_kn = params
+        w = n_kn * (1 - p_kn) / p_kn
+        unknown_sampler = BinomialDistribution(int(n_unk), p_unk)
+        known_sampler = BinomialDistribution(int(n_kn), p_kn)
+    elif distribution == "poisson":
+        if len(params) != 2:
+            raise ValueError("Poisson distribution requires 2 parameters: lambda_unknown, lambda_known.")
+        lambd_unk, lambd_kn = params
+        w = lambd_kn
+        unknown_sampler = PoissonDistribution(lambd_unk)
+        known_sampler = PoissonDistribution(lambd_kn)
+    elif distribution == "geometric":
+        if len(params) != 1:
+            raise ValueError("Geometric distribution requires 2 parameters: p_unknown, p_known.")
+        p_unknown, p_known = params
+        w = 1 / (1 - p_known)
+        unknown_sampler = GeometricDistribution(p_unknown)
+        known_sampler = GeometricDistribution(p_known)
+    else:
+        raise ValueError("Unsupported distribution type.")
 
-    # Poisson
-    # lambd_unk = 40
-    # lambd_known = 40
-    # w = lambd_known
-    # print("w:", w)
-    # unknown_sampler = PoissonDistribution(lambd_unk)
-    # known_sampler = PoissonDistribution(lambd_known)
+    print("Running Infident with the following parameters:")
+    print(f"Distribution: {distribution}")
+    print(f"Parameters: {params}")
+    print(f"eps: {eps}, eta: {eta}, delta: {delta}, w: {w}")
 
-    # Geometric
-    p_unk = 0.4
-    p_known = 0.4
-    w = 1 / (1- p_known)  # maximum ratio for Geometric
-    print("w:", w)
-    unknown_sampler = GeometricDistribution(p_unk)
-    known_sampler = GeometricDistribution(p_known)
-
-
-    # Run the Infident algorithm
-    eps = 0.01
-    eta = 0.5
-    delta = 0.05
     result = infident(unknown_sampler, known_sampler, eps, eta, delta, w)
     print("Result:", result)
