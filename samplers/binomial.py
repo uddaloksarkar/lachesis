@@ -68,8 +68,8 @@ class BinomialDistribution:
     def pmf(self, k):
         if k < 0 or k > self.n:
             return 0.0
-        coeff = math.comb(self.n, k)
-        return coeff * (self.p ** k) * ((1 - self.p) ** (self.n - k))
+        mass = _lgamma(self.n + 1) - _lgamma(k + 1) - _lgamma(self.n - k + 1) + k * math.log(self.p) + (self.n - k) * math.log(1 - self.p)
+        return _exp(mass)
 
     def hat_cdf_inv(self, u):
         """
