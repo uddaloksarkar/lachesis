@@ -93,6 +93,7 @@ if __name__ == '__main__':
     parser.add_argument("--eps", type=float, default=0.01, help="Epsilon value for Infident.")
     parser.add_argument("--eta", type=float, default=0.5, help="Eta value for Infident.")
     parser.add_argument("--delta", type=float, default=0.05, help="Delta value for Infident.")
+    parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility.")
     args = parser.parse_args()
 
     distribution = args.distribution
@@ -100,6 +101,10 @@ if __name__ == '__main__':
     eps = args.eps
     eta = args.eta
     delta = args.delta
+    seed = args.seed
+
+    if seed is not None:
+        random.seed(seed)
 
     file_handler = logging.FileHandler(f"{distribution}_{'_'.join(str(p) for p in params)}.log")
     logger.addHandler(file_handler)
