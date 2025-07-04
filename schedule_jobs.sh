@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source=~/.venvs/udda/bin/activate
+
 filespos="benchmarks/binomial_benchmarks.csv"
 
 ulimit -t unlimited
@@ -33,9 +35,9 @@ numthreads=$((OMPI_COMM_WORLD_SIZE))
 ################
 
 
-SERVER=$PBS_O_HOST
-WORKDIR="scratch/${PBS_JOBID}_${OMPI_COMM_WORLD_RANK}"
-output="${output}-${PBS_JOBID}"
+SERVER=$SLURM_SUBMIT_HOST
+WORKDIR="$SCRATCH/scratch/${SLURM_JOB_ID}_${OMPI_COMM_WORLD_RANK}"
+output="${output}-${SLURM_JOB_ID}"
 
 # echo ------------------------------------------------------
 # echo "Job is running on node ${PBS_NODEFILE}"
@@ -44,7 +46,7 @@ output="${output}-${PBS_JOBID}"
 # echo "PBS: qsub is running on $PBS_O_HOST"
 # echo "PBS: originating queue is $PBS_O_QUEUE"
 # echo "PBS: executing queue is $PBS_QUEUE"
-# echo "PBS: working directory is $PBS_O_WORKDIR"
+# echo "PBS: working directory is $SLURM_SUBMIT_DIR"
 # echo "PBS: execution mode is $PBS_ENVIRONMENT"
 # echo "PBS: job identifier is ${PBS_JOBID}"
 # echo "PBS: job name is $PBS_JOBNAME"
@@ -60,8 +62,9 @@ output="${output}-${PBS_JOBID}"
 mkdir -p "${WORKDIR}"
 cd "${WORKDIR}" || exit
 
-allbench=$(tail -n +2 "${PBS_O_WORKDIR}/${filespos}" | shuf --random-source="${PBS_O_WORKDIR}/myrnd")
-outputdir="${PBS_O_WORKDIR}/${solver}-main"
+allbench=$(tail -n +2 "${SLURM_SUBMIT_DIR}/${filespos}" | shuf --random-source="${SLURM_SUBMIT_DIR}/myrnd")
+outputdir="${SLURM_SUBMIT_DIR}/${solver}-main"
+echo outputdir is ${outputdir}
 cp -r ${outputdir}/tester.py .
 cp -r ${outputdir}/timeout .
 cp -r ${outputdir}/baseline.py .
@@ -84,7 +87,7 @@ do
         # run
         baseout="${output}-${at_opt}/${filename}"
         mytimeout="./timeout -k 2 -s SIGINT ${tlimit} "
-        echo "/usr/bin/time --verbose -o ${baseout}.timeout ${mytimeout} ./${opts} --seed $SEED --params ${params} > ${baseout}.out 2>&1" >> todo
+        echo "/usr/bin/time --verbose -o ${baseout}.timeout ${mytimeout} ${opts} --seed $SEED --params ${params} > ${baseout}.out 2>&1" >> todo
     
         echo "mkdir -p  ${outputdir}/${output}-${at_opt}" >> todo
         echo "xz ${baseout}.out*" >> todo
