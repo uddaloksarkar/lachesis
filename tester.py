@@ -6,6 +6,7 @@ import logging
 from samplers.binomial import BinomialDistribution
 from samplers.poisson import PoissonDistribution
 from samplers.geometric import GeometricDistribution
+import gmpy2 as gp
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -118,13 +119,15 @@ def Est(unknown, x, zeta, delta_Est, B, w):
         logger.error("r2: TPA failed to return a valid lambda.")
         return None, _ncalls1 + _ncalls2
     
-    return math.exp(-lambda_), _ncalls1 + _ncalls2
+    lambda_ = gp.mpfr(lambda_)
+    return gp.exp(-lambda_), _ncalls1 + _ncalls2
 
 def infident(unknown_sampler, known_sampler, eps, eta, delta, w):
     
     zeta = (eta - eps) / (eta - eps + 2)
     w_prime = ((1 + 2 * eps) / (1 - 2 * eps)) * w
     t = int((8 / ((eta - eps) ** 2)) * np.log(4 / delta))
+    t = 10
     logger.info(f"Number of samples (t): {t}")
 
     samples = [unknown_sampler.sample() for _ in range(t)]
@@ -139,7 +142,7 @@ def infident(unknown_sampler, known_sampler, eps, eta, delta, w):
             logger.error(f"Sample {i}: known_prob is 0 for x_i = {x_i}. Something is off! Rejecting the Sampler.")
             return "reject", _ncalls
 
-        B = math.log((1 + 2 * eps) / known_prob)
+        B = gp.log((1 + 2 * eps) / known_prob)
         
         pest, _calls = Est(unknown_sampler, x_i, zeta, delta / (4 * t), B, w_prime)
         _ncalls += _calls
@@ -152,6 +155,7 @@ def infident(unknown_sampler, known_sampler, eps, eta, delta, w):
         pest_values.append((x_i, pest))
 
     dest = sum(max(0, 1 - known_sampler.pmf(x_i) / pest) for x_i, pest in pest_values) / t
+    dest = float(dest)
 
     logger.info(f"Estimated TV distance: {dest}")
 
@@ -177,7 +181,7 @@ if __name__ == '__main__':
     eta = args.eta
     delta = args.delta
     seed = args.seed
-    
+
     if seed is not None:
         random.seed(seed)
 

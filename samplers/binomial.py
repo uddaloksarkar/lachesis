@@ -6,6 +6,7 @@ from math import tau as TWOPI, floor as _floor, isfinite as _isfinite
 from math import lgamma as _lgamma, fabs as _fabs, log2 as _log2
 from operator import index as _index
 import matplotlib.pyplot as plt  # Add this import for plotting
+import gmpy2 as gp
 
 
 class BinomialDistribution:
@@ -68,8 +69,9 @@ class BinomialDistribution:
     def pmf(self, k):
         if k < 0 or k > self.n:
             return 0.0
-        mass = _lgamma(self.n + 1) - _lgamma(k + 1) - _lgamma(self.n - k + 1) + k * math.log(self.p) + (self.n - k) * math.log(1 - self.p)
-        return _exp(mass)
+        n, p, k = gp.mpfr(self.n), gp.mpfr(self.p), gp.mpfr(k)
+        mass = gp.lgamma(n + 1)[0] - gp.lgamma(k + 1)[0] - gp.lgamma(n - k + 1)[0] + k * gp.log(p) + (n - k) * gp.log(1 - p)
+        return gp.exp(mass)
 
     def hat_cdf_inv(self, u):
         """

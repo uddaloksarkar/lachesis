@@ -6,6 +6,7 @@ import logging
 from samplers.binomial import BinomialDistribution
 from math import sqrt as _sqrt, log2 as _log2, log as _log
 from tester import intcond
+import gmpy2 as gp
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -30,7 +31,7 @@ def Est(unknown, x, zeta, delta_Est):
     n = unknown.n
     k_low = 0
     k_high = n
-    prob = 1
+    prob = gp.mpfr(1)
     _ncalls = 0
 
     maxHeads = 3 * _log(n) / zeta**2 * math.log(2 * _log(n) / delta_Est)
@@ -38,7 +39,7 @@ def Est(unknown, x, zeta, delta_Est):
     while k_low != x and k_high != x:
         pivot = k_low + (k_high - k_low) // 2
         bias, _calls = getBias(unknown, k_low, k_high, maxHeads, pivot, pivot < x)
-        prob *= bias
+        prob *= gp.mpfr(bias)
         if pivot < x:
             k_low = pivot
         else:
@@ -51,6 +52,7 @@ def baseline(unknown_sampler, known_sampler, eps, eta, delta, w):
     zeta = (eta - eps) / 2
     gamma = zeta / (1.11 * (2 + zeta))
     t = int((2 / (zeta ** 2)) * np.log(4 / delta))
+    t = 10
     logger.info(f"Number of samples (t): {t}")
     u_low = -0.5
     u_high = 0.5
@@ -78,6 +80,7 @@ def baseline(unknown_sampler, known_sampler, eps, eta, delta, w):
         pest_values.append((x_i, pest))
 
     dest = sum(max(0, 1 - known_sampler.pmf(x_i) / pest) for x_i, pest in pest_values) / t
+    dest = float(dest)
     logger.info(f"Estimated TV distance: {dest}")
 
     if dest > (eta + eps) / 2:
