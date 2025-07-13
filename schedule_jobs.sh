@@ -2,7 +2,7 @@
 
 source=~/.venvs/udda/bin/activate
 
-filespos="benchmarks/binomial_benchmarks.csv"
+filespos="benchmarks/binomial_benchmarks_cstudy.csv"
 
 ulimit -t unlimited
 shopt -s nullglob
@@ -17,8 +17,13 @@ SEED="66"
 tlimit="5000"
 
 opts_arr=(
-"python tester.py binomial --eps ${EPS} --eta ${ETA} --delta ${DELTA}"
-"python baseline.py binomial --eps ${EPS} --eta ${ETA} --delta ${DELTA}"
+"python tester.py binomial --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+"python tester.py binomial_spoofed_1 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+"python tester.py binomial_spoofed_2 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+"python tester.py binomial_spoofed_3 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+"python tester.py binomial_spoofed_4 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+"python tester.py binomial_spoofed_5 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+"python tester.py binomial_spoofed_6 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
 )
 
 output="out"
