@@ -128,7 +128,7 @@ def infident(unknown_sampler, known_sampler, eps, eta, delta, w):
     zeta = (eta - eps) / (eta - eps + 2)
     w_prime = ((1 + 2 * eps) / (1 - 2 * eps)) * w
     t = int((8 / ((eta - eps) ** 2)) * np.log(4 / delta))
-    t = 10
+    # t = 10
     logger.info(f"Number of samples (t): {t}")
 
     samples = [unknown_sampler.sample() for _ in range(t)]
@@ -199,14 +199,16 @@ if __name__ == '__main__':
         w = n_kn * (1 - p_kn) / p_kn
         unknown_sampler = dist.BinomialDistribution(int(n_unk), p_unk)
         known_sampler = dist.BinomialDistribution(int(n_kn), p_kn)
-    elif distribution == "poisson":
+    elif "poisson" in distribution:
         if len(params) != 2:
             raise ValueError("Poisson distribution requires 2 parameters: lambda_unknown, lambda_known.")
+        full_module_path = f"samplers.{distribution}"
+        dist = importlib.import_module(full_module_path)
         lambd_unk, lambd_kn = params
         lambd_unk, lambd_kn = float(lambd_unk), float(lambd_kn)
         w = lambd_kn
-        unknown_sampler = PoissonDistribution(lambd_unk)
-        known_sampler = PoissonDistribution(lambd_kn)
+        unknown_sampler = dist.PoissonDistribution(lambd_unk)
+        known_sampler = dist.PoissonDistribution(lambd_kn)
     elif distribution == "geometric":
         if len(params) != 2:
             raise ValueError("Geometric distribution requires 2 parameters: p_unknown, p_known.")

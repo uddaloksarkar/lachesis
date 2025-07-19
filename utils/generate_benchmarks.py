@@ -63,12 +63,41 @@ def generate_binomial_benchmarks_for_bugs(output_file, n_samples=100, n_min=1000
             f.write(f"{n_unk},{p_unk:.4f},{n_kn},{p_kn:.4f}\n")
         
 
+def generate_poisson_benchmarks_for_bugs(output_file, n_samples=100, mu_min=1000, mu_max=600000):
+    """
+    Generate benchmarks for Poisson parameters.
+
+    Args:
+        output_file (str): Path to the output file to save benchmarks.
+        n_samples (int): Number of benchmarks to generate.
+        mu_min (int): Minimum value for mu_unk.
+        mu_max (int): Maximum value for mu_unk.
+    """
+    mu_unk_values = np.linspace(mu_min, mu_max, n_samples, dtype=int)
+    
+    with open(output_file, "w") as f:
+        f.write("mu_unk,mu_kn\n")
+        
+        for mu_unk in mu_unk_values:
+            # Generate significantly different mu_kn 
+            mu_kn = mu_unk  # n_kn = n_unk
+            f.write(f"{mu_unk},{mu_kn}\n")
+
 
 if __name__ == "__main__":
+
+    '''Benchmarks for performance experiments with binomial distributions'''
     # output_file = "/Users/uddalok/Documents/PHD/projects/intCondTester/benchmarks/binomial_benchmarks.csv"
     # generate_binomial_benchmarks(output_file, n_samples=100, n_min=1000, n_max=600000, p_min=0.01, p_max=0.5)
     # print(f"Benchmarks saved to {output_file}")
+    
+    '''Benchmarks for bugs in binomial distributions'''
     output_file = "./benchmarks/binomial_benchmarks_cstudy.csv"
-    generate_binomial_benchmarks_for_bugs(output_file, n_samples=50, n_min=100, n_max=10000, p_min=0.01, p_max=0.5)
+    generate_binomial_benchmarks_for_bugs(output_file, n_samples=50, n_min=1000, n_max=100000, p_min=0.01, p_max=0.5)
     print(f"Benchmarks saved to {output_file}")
+    
+    '''Benchmarks for bugs in poisson distributions'''
+    # output_file = "./benchmarks/poisson_benchmarks_cstudy.csv"
+    # generate_poisson_benchmarks_for_bugs(output_file, n_samples=50, mu_min=1000, mu_max=100000)
+    # print(f"Benchmarks saved to {output_file}")
     
