@@ -5,9 +5,9 @@ from collections import defaultdict
 import random
 
 # Directory pattern and regex for filename and file content
-dir_prefix = "out-14853391-"
+dir_prefix = "out-14891486-"
 num_dirs = 6
-file_pattern = re.compile(r'(\d+_\d+\.\d+_\d+_\d+\.\d+)\.out\.xz')
+file_pattern = re.compile(r'.*\.out\.xz$')
 decision_pattern = re.compile(r'Decision:\s+(accept|reject)', re.IGNORECASE)
 calls_pattern = re.compile(r'Number of calls:\s+(\d+)')
 
@@ -25,7 +25,7 @@ for i in range(1, num_dirs + 1):
         if not match:
             continue
 
-        param_key = match.group(1)
+        param_key = match.group(0)
         file_path = os.path.join(dir_name, file)
 
         with lzma.open(file_path, 'rt') as f:
@@ -52,7 +52,7 @@ sorted_keys = sorted(results, key=extract_n_from_key)
 latex = []
 latex.append(r"\begin{tabular}{l" + "cc" * num_dirs + "}")
 latex.append(r"\toprule")
-header = ["(n, p)"]
+header = ["$\mu$"]
 for i in range(1, num_dirs + 1):
     header.append(f"\\multicolumn{{2}}{{c}}{{{i}}}")
 latex.append(" & ".join(header) + r" \\")
@@ -61,7 +61,7 @@ latex.append(" & ".join(subheader) + r" \\")
 latex.append(r"\midrule")
 
 for key in sorted_keys:
-    row = [key.split('_')[0] + r", " + str(float(key.split('_')[1]))]
+    row = [key.split('.')[0].split('_')[0]]
     for (decision, calls) in results[key]:
         if decision.lower() == "accept":
             row.append(r"\acceptcell")
@@ -76,7 +76,7 @@ latex.append(r"\bottomrule")
 latex.append(r"\end{tabular}")
 
 # Write to file
-with open("table.tex", "w") as f:
+with open("table_"+ dir_prefix.split("-")[1] + ".tex", "w") as f:
     f.write("\n".join(latex))
 
 
@@ -84,7 +84,7 @@ with open("table.tex", "w") as f:
 latex = []
 latex.append(r"\begin{tabular}{l" + "cc" * num_dirs + "}")
 latex.append(r"\toprule")
-header = ["(n, p)"]
+header = ["$\mu$"]
 for i in range(1, num_dirs + 1):
     header.append(f"\\multicolumn{{2}}{{c}}{{{i}}}")
 latex.append(" & ".join(header) + r" \\")
@@ -94,7 +94,7 @@ latex.append(r"\midrule")
 
 random_keys = random.sample(sorted_keys, 10) if len(sorted_keys) > 10 else sorted_keys
 for key in random_keys:
-    row = [key.split('_')[0] + r", " + str(float(key.split('_')[1]))]
+    row = [key.split('.')[0].split('_')[0]]
     for (decision, calls) in results[key]:
         if decision.lower() == "accept":
             row.append(r"\acceptcell")
@@ -109,6 +109,6 @@ latex.append(r"\bottomrule")
 latex.append(r"\end{tabular}")
 
 # Write to file
-with open("short_table.tex", "w") as f:
+with open("short_table_"+ dir_prefix.split("-")[1] + ".tex", "w") as f:
     f.write("\n".join(latex))
 

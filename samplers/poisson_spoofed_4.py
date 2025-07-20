@@ -35,7 +35,7 @@ class PoissonDistribution:
         else:
             lnlam = _log(lambd)
             b = 1.931 + 4.53 * _sqrt(lambd)
-            a = - 0.559 + 1.02483 * b
+            a = - 0.559 + 0.14483 * b
             vr = 0.9277 - 3.6224 / (b - 2)
             invalpha = 1.1239 + 1.1328 / (b - 3.4)
             
