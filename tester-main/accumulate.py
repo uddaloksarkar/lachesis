@@ -48,26 +48,29 @@ def plot_results(results, title, show=True):
     """
     colors = {'baseline': 'blue', 'iTester': 'green'}
     markers = {'reject': 'x', 'accept': 'o'}
+    rename = {'iTester': r'$\mathsf{Lachesis}$', 'baseline': 'Baseline', 'reject': 'Reject', 'accept': 'Accept'}
     legend_labels = set()
 
     for x_value, decision, num_calls, label in results:
         color = colors[label]
         marker = markers['reject' if decision == "reject" else 'accept']
-        legend_label = f"{label}-{decision}"
+        legend_label = f"{rename[label]} ({rename[decision]})"
         if legend_label not in legend_labels:
             plt.scatter(x_value, num_calls, marker=marker, color=color, label=legend_label)
             legend_labels.add(legend_label)
         else:
             plt.scatter(x_value, num_calls, marker=marker, color=color)
 
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+    plt.legend(fontsize=16)
     # plt.title(title)
-    plt.xlabel("Program Domain Size")
-    plt.ylabel("#INTCOND Queries")
+    plt.xlabel("Program Domain Size", fontsize=20)
+    plt.ylabel(r"#$\mathsf{ICOND}$ Queries", fontsize=20)
     plt.xlim(0, max(x[0] for x in results) + 1)
     plt.yscale('log')
     plt.grid(True)
     if show:
-        plt.legend(loc="center")
         plt.show()
 
 if __name__ == "__main__":
@@ -83,6 +86,6 @@ if __name__ == "__main__":
             plot_results(results_1, "Combined Results", show=False)
         if results_0:
             plot_results(results_0, "Combined Results", show=False)
-        plt.legend(loc="upper right")
+        plt.legend(loc="center right")
         plt.savefig("combined_results_"+ log_dir_0.split('-')[1] +".pdf")
         plt.show()
