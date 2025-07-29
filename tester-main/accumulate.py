@@ -12,7 +12,7 @@ def process_logs(log_dir, label):
         label (str): Label for the log group (e.g., 'logs-1' or 'logs-0').
 
     Returns:
-        list: A list of tuples (decision, num_calls, label).
+        list: A list of tuples (x_value, decision, num_calls, label).
     """
     results = []
     decision_pattern = re.compile(r"Decision:\s*(\w+)")
@@ -21,6 +21,7 @@ def process_logs(log_dir, label):
     for filename in os.listdir(log_dir):
         if filename.endswith(".out.xz"):
             filepath = os.path.join(log_dir, filename)
+            x_value = int(filename.split('_')[0])  # Extract the first number from the filename
             with lzma.open(filepath, "rt") as file:  # Decompress and read the file
                 content = file.read()
                 decision_match = decision_pattern.search(content)
@@ -31,9 +32,9 @@ def process_logs(log_dir, label):
                     num_calls = int(calls_match.group(1))
                     # Skip if "Decision: reject, Number of calls: 0"
                     if not (decision == "reject" and num_calls == 0):
-                        results.append((decision, num_calls, label))
-    # Sort results by number of calls
-    results.sort(key=lambda x: x[1])
+                        results.append((x_value, decision, num_calls, label))
+    # Sort results by x_value
+    results.sort(key=lambda x: x[0])
     return results
 
 def plot_results(results, title, show=True):
@@ -41,30 +42,37 @@ def plot_results(results, title, show=True):
     Plot the results with different colors for logs-1 and logs-0, and shapes for reject and accept.
 
     Args:
-        results (list): A list of tuples (decision, num_calls, label).
+        results (list): A list of tuples (x_value, decision, num_calls, label).
         title (str): Title for the plot.
         show (bool): Whether to display the plot immediately.
     """
     colors = {'baseline': 'blue', 'iTester': 'green'}
     markers = {'reject': 'x', 'accept': 'o'}
+    legend_labels = set()
 
-    for idx, (decision, num_calls, label) in enumerate(results):
+    for x_value, decision, num_calls, label in results:
         color = colors[label]
         marker = markers['reject' if decision == "reject" else 'accept']
-        plt.scatter(idx, num_calls, marker=marker, color=color, label=f"{label}-{decision}" if idx == 0 else None)
+        legend_label = f"{label}-{decision}"
+        if legend_label not in legend_labels:
+            plt.scatter(x_value, num_calls, marker=marker, color=color, label=legend_label)
+            legend_labels.add(legend_label)
+        else:
+            plt.scatter(x_value, num_calls, marker=marker, color=color)
 
     # plt.title(title)
-    plt.xlabel("Programs")
+    plt.xlabel("Program Domain Size")
     plt.ylabel("#INTCOND Queries")
+    plt.xlim(0, max(x[0] for x in results) + 1)
     plt.yscale('log')
     plt.grid(True)
     if show:
-        plt.legend(loc="upper right")
+        plt.legend(loc="center")
         plt.show()
 
 if __name__ == "__main__":
-    log_dir_1 = "./out-14776632-1"  # Update with the correct directory for logs-1
-    log_dir_0 = "./out-14776632-0"  # Update with the correct directory for logs-0
+    log_dir_1 = "./out-14779807-1"  # Update with the correct directory for logs-1
+    log_dir_0 = "./out-14779807-0"  # Update with the correct directory for logs-0
 
     results_1 = process_logs(log_dir_1, "baseline")
     results_0 = process_logs(log_dir_0, "iTester")
