@@ -7,6 +7,7 @@ from samplers.binomial import BinomialDistribution
 from samplers.poisson import PoissonDistribution
 from samplers.geometric import GeometricDistribution
 import gmpy2 as gp
+import importlib
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -127,7 +128,7 @@ def infident(unknown_sampler, known_sampler, eps, eta, delta, w):
     zeta = (eta - eps) / (eta - eps + 2)
     w_prime = ((1 + 2 * eps) / (1 - 2 * eps)) * w
     t = int((8 / ((eta - eps) ** 2)) * np.log(4 / delta))
-    t = 10
+    # t = 10
     logger.info(f"Number of samples (t): {t}")
 
     samples = [unknown_sampler.sample() for _ in range(t)]
@@ -167,7 +168,7 @@ def infident(unknown_sampler, known_sampler, eps, eta, delta, w):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Run the Infident algorithm with a specified distribution.")
-    parser.add_argument("distribution", choices=["binomial", "poisson", "geometric"], help="Type of distribution to use.")
+    parser.add_argument("distribution", type=str, help="Type of distribution to use.")
     parser.add_argument("--params", nargs="+", type=str, required=True, help="Parameters for the chosen distribution.")
     parser.add_argument("--eps", type=float, default=0.01, help="Epsilon value for Infident.")
     parser.add_argument("--eta", type=float, default=0.5, help="Eta value for Infident.")
@@ -188,24 +189,28 @@ if __name__ == '__main__':
     file_handler = logging.FileHandler(f"{distribution}_{'_'.join(str(p) for p in params)}.log")
     logger.addHandler(file_handler)
 
-    if distribution == "binomial":
+    if "binomial" in distribution:
         if len(params) != 4:
             raise ValueError("Binomial distribution requires 4 parameters: n_unknown, p_unknown, n_known, p_known.")
+        full_module_path = f"samplers.{distribution}"
+        dist = importlib.import_module(full_module_path)
         n_unk, p_unk, n_kn, p_kn = params
         n_unk, p_unk, n_kn, p_kn = int(n_unk), float(p_unk), int(n_kn), float(p_kn)
         w = n_kn * (1 - p_kn) / p_kn
-        unknown_sampler = BinomialDistribution(int(n_unk), p_unk)
-        known_sampler = BinomialDistribution(int(n_kn), p_kn)
-    elif distribution == "poisson":
+        unknown_sampler = dist.BinomialDistribution(int(n_unk), p_unk)
+        known_sampler = dist.BinomialDistribution(int(n_kn), p_kn)
+    elif "poisson" in distribution:
         if len(params) != 2:
             raise ValueError("Poisson distribution requires 2 parameters: lambda_unknown, lambda_known.")
+        full_module_path = f"samplers.{distribution}"
+        dist = importlib.import_module(full_module_path)
         lambd_unk, lambd_kn = params
         lambd_unk, lambd_kn = float(lambd_unk), float(lambd_kn)
         w = lambd_kn
-        unknown_sampler = PoissonDistribution(lambd_unk)
-        known_sampler = PoissonDistribution(lambd_kn)
+        unknown_sampler = dist.PoissonDistribution(lambd_unk)
+        known_sampler = dist.PoissonDistribution(lambd_kn)
     elif distribution == "geometric":
-        if len(params) != 1:
+        if len(params) != 2:
             raise ValueError("Geometric distribution requires 2 parameters: p_unknown, p_known.")
         p_unknown, p_known = params
         p_unknown, p_known = float(p_unknown), float(p_known)

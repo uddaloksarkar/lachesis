@@ -12,15 +12,15 @@ import gmpy2 as gp
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-def getBias(unknown, k_low, k_high, maxHeads, pivot, is_pivot_smaller):
+def getBias(unknown, k_low, k_high, maxHeads, pivot, is_pivot_smalleq):
     head = 0
     tot = 0
     _ncalls = 0
     while head < maxHeads:
         sample = intcond(unknown, k_low, k_high)
-        if sample > pivot and is_pivot_smaller:
+        if pivot <= sample and is_pivot_smalleq:
             head += 1
-        elif sample < pivot and not is_pivot_smaller:
+        elif sample < pivot and not is_pivot_smalleq:
             head += 1
         tot += random.expovariate(1)
         _ncalls += 1
@@ -36,14 +36,14 @@ def Est(unknown, x, zeta, delta_Est):
 
     maxHeads = 3 * _log(n) / zeta**2 * math.log(2 * _log(n) / delta_Est)
 
-    while k_low != x and k_high != x:
-        pivot = k_low + (k_high - k_low) // 2
-        bias, _calls = getBias(unknown, k_low, k_high, maxHeads, pivot, pivot < x)
+    while k_low < k_high -1 :
+        pivot = k_high - (k_high - k_low) // 2
+        bias, _calls = getBias(unknown, k_low, k_high, maxHeads, pivot, pivot <= x)
         prob *= gp.mpfr(bias)
-        if pivot < x:
+        if pivot <= x:
             k_low = pivot
         else:
-            k_high = pivot
+            k_high = pivot -1
         _ncalls += _calls
 
     return prob, _ncalls
@@ -52,7 +52,7 @@ def baseline(unknown_sampler, known_sampler, eps, eta, delta, w):
     zeta = (eta - eps) / 2
     gamma = zeta / (1.11 * (2 + zeta))
     t = int((2 / (zeta ** 2)) * np.log(4 / delta))
-    t = 10
+    # t = 10
     logger.info(f"Number of samples (t): {t}")
     u_low = -0.5
     u_high = 0.5

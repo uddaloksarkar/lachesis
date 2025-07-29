@@ -2,7 +2,9 @@
 
 source=~/.venvs/udda/bin/activate
 
-filespos="benchmarks/binomial_benchmarks.csv"
+# filespos="benchmarks/binomial_benchmarks_cstudy.csv"
+filespos="benchmarks/poisson_benchmarks_cstudy.csv"
+# filespos="benchmarks/binomial_benchmarks.csv"
 
 ulimit -t unlimited
 shopt -s nullglob
@@ -16,10 +18,33 @@ DELTA=0.05
 SEED="66"
 tlimit="5000"
 
+# # cstudy benchmarks Binomial
+# opts_arr=(
+# "python tester.py binomial --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+# "python tester.py binomial_spoofed_1 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+# "python tester.py binomial_spoofed_2 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+# "python tester.py binomial_spoofed_3 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+# "python tester.py binomial_spoofed_4 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+# "python tester.py binomial_spoofed_5 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+# "python tester.py binomial_spoofed_6 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+# )
+
+# cstudy benchmarks Poisson
 opts_arr=(
-"python tester.py binomial --eps ${EPS} --eta ${ETA} --delta ${DELTA}"
-"python baseline.py binomial --eps ${EPS} --eta ${ETA} --delta ${DELTA}"
+"python tester.py poisson --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+"python tester.py poisson_spoofed_1 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+"python tester.py poisson_spoofed_2 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+"python tester.py poisson_spoofed_3 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+"python tester.py poisson_spoofed_4 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+"python tester.py poisson_spoofed_5 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+"python tester.py poisson_spoofed_6 --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
 )
+
+# # performance baseline
+# opts_arr=(
+# "python baseline.py binomial --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+# "python tester.py binomial --eps ${EPS} --eta ${ETA} --delta ${DELTA} --seed ${SEED}"
+# )
 
 output="out"
 #5GB mem limit
