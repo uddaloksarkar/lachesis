@@ -87,14 +87,14 @@ def generate_poisson_benchmarks_for_bugs(output_file, n_samples=100, mu_min=1000
 if __name__ == "__main__":
 
     '''Benchmarks for performance experiments with binomial distributions'''
-    # output_file = "/Users/uddalok/Documents/PHD/projects/intCondTester/benchmarks/binomial_benchmarks.csv"
-    # generate_binomial_benchmarks(output_file, n_samples=100, n_min=1000, n_max=600000, p_min=0.01, p_max=0.5)
-    # print(f"Benchmarks saved to {output_file}")
+    output_file = "/Users/uddalok/Documents/PHD/projects/intCondTester/benchmarks/binomial_benchmarks.csv"
+    generate_binomial_benchmarks(output_file, n_samples=100, n_min=100, n_max=60000, p_min=0.01, p_max=0.5)
+    print(f"Benchmarks saved to {output_file}")
     
     '''Benchmarks for bugs in binomial distributions'''
-    output_file = "./benchmarks/binomial_benchmarks_cstudy.csv"
-    generate_binomial_benchmarks_for_bugs(output_file, n_samples=50, n_min=1000, n_max=100000, p_min=0.01, p_max=0.5)
-    print(f"Benchmarks saved to {output_file}")
+    # output_file = "./benchmarks/binomial_benchmarks_cstudy.csv"
+    # generate_binomial_benchmarks_for_bugs(output_file, n_samples=50, n_min=1000, n_max=100000, p_min=0.01, p_max=0.5)
+    # print(f"Benchmarks saved to {output_file}")
     
     '''Benchmarks for bugs in poisson distributions'''
     # output_file = "./benchmarks/poisson_benchmarks_cstudy.csv"

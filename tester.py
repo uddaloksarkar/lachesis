@@ -12,6 +12,7 @@ import importlib
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+MAX = 10000000000
 
 def compute_H_from_inverse(H_inv, k, lo=-0.5, hi=0.5, tol=1e-6):
     """
@@ -53,7 +54,7 @@ def intcond(unknown, u, v):
     return unknown.sample(u_low, u_high)
 
 def cintcond(unknown, u, v, delta_intcond, w):
-    T = int((2 * w + 1) * math.log(1 / delta_intcond)) * 2
+    T = int(min(float(2 * w + 1) * math.log(1 / delta_intcond), MAX) * 2)
     
     for i in range(T):
         x = intcond(unknown, u, v)  # Sample from unknown | [u, v]
@@ -165,6 +166,54 @@ def infident(unknown_sampler, known_sampler, eps, eta, delta, w):
     else:
         return "accept", _ncalls
 
+def tvident(unknown_sampler, known_sampler, eps, eta, delta, w):
+    
+    zeta = (eta - eps) / (eta - eps + 2)
+    
+    t = int((8 / ((eta - eps) ** 2)) * np.log(4 / delta))
+    
+    # t = 10
+    logger.info(f"Number of samples (t): {t}")
+
+    log_term = np.log(4 / delta)
+    k = 1 + (1 / t) * log_term + np.sqrt((1 / t) * log_term**2 + (2 / t) * log_term)
+    t_prime = int(3 * k * t)
+
+    logger.info(f"Number of actual samples (t_prime): {t_prime}")
+
+    samples = [unknown_sampler.sample() for _ in range(t)]
+    pest_values = []
+    _ncalls = 0
+
+    known_min = known_sampler.pmf(0) 
+    theta = gp.mpfr(1) / gp.mpfr(known_min)
+    B = float(gp.log(theta)) + np.log(1 + eps)
+
+    for i in range(t):
+        logger.info(f"Doing Sample {i}: {samples[i]}")
+        x_i = samples[i]
+        known_prob = known_sampler.pmf(x_i)
+        
+        pest, _calls = Est(unknown_sampler, x_i, zeta, delta / (4 * t), B, theta)
+        _ncalls += _calls
+
+        logger.info(f"Sample {i}: x_i = {x_i}, known_prob = {known_prob}, Estimated Mass = {pest}")
+        
+        if pest is None:
+            return "reject", _ncalls
+        
+        pest_values.append((x_i, pest))
+
+    dest = sum(max(0, 1 - known_sampler.pmf(x_i) / pest) for x_i, pest in pest_values) / t
+    dest = float(dest)
+
+    logger.info(f"Estimated TV distance: {dest}")
+
+    if dest > (eta + eps) / 2:
+        return "reject", _ncalls
+    else:
+        return "accept", _ncalls
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Run the Infident algorithm with a specified distribution.")
@@ -225,7 +274,7 @@ if __name__ == '__main__':
     logger.info(f"Parameters: {params}")
     logger.info(f"eps: {eps}, eta: {eta}, delta: {delta}, w: {w}")
 
-    result, _ncalls = infident(unknown_sampler, known_sampler, eps, eta, delta, w)
+    result, _ncalls = tvident(unknown_sampler, known_sampler, eps, eta, delta, w)
     logger.info(f"Decision: {result}, Number of calls: {_ncalls}")
 
 #514740
