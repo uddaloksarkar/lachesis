@@ -159,7 +159,6 @@ def infident(unknown_sampler, known_sampler, eps, eta, delta, w):
     dest = sum(max(0, 1 - known_sampler.pmf(x_i) / pest) for x_i, pest in pest_values) / t
     dest = float(dest)
 
-    logger.info(f"Estimated TV distance: {dest}")
 
     if dest > (eta + eps) / 2:
         return "reject", _ncalls
@@ -207,7 +206,6 @@ def tvident(unknown_sampler, known_sampler, eps, eta, delta, w):
     dest = sum(max(0, 1 - known_sampler.pmf(x_i) / pest) for x_i, pest in pest_values) / t
     dest = float(dest)
 
-    logger.info(f"Estimated TV distance: {dest}")
 
     if dest > (eta + eps) / 2:
         return "reject", _ncalls
@@ -222,6 +220,7 @@ if __name__ == '__main__':
     parser.add_argument("--eps", type=float, default=0.01, help="Epsilon value for Infident.")
     parser.add_argument("--eta", type=float, default=0.5, help="Eta value for Infident.")
     parser.add_argument("--delta", type=float, default=0.05, help="Delta value for Infident.")
+    parser.add_argument("--er", action="store_true", help="If set, run infident instead of Tvident.")
     parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility.")
     args = parser.parse_args()
 
@@ -231,12 +230,10 @@ if __name__ == '__main__':
     eta = args.eta
     delta = args.delta
     seed = args.seed
+    er = args.er
 
     if seed is not None:
         random.seed(seed)
-
-    file_handler = logging.FileHandler(f"{distribution}_{'_'.join(str(p) for p in params)}.log")
-    logger.addHandler(file_handler)
 
     if "binomial" in distribution:
         if len(params) != 4:
@@ -274,8 +271,9 @@ if __name__ == '__main__':
     logger.info(f"Parameters: {params}")
     logger.info(f"eps: {eps}, eta: {eta}, delta: {delta}, w: {w}")
 
-    result, _ncalls = tvident(unknown_sampler, known_sampler, eps, eta, delta, w)
-    logger.info(f"Decision: {result}, Number of calls: {_ncalls}")
-
-#514740
-#28545592
+    if er:
+        result, _ncalls = infident(unknown_sampler, known_sampler, eps, eta, delta, w)
+        logger.info(f"Decision: {result}, Number of calls: {_ncalls}")
+    else:
+        result, _ncalls = tvident(unknown_sampler, known_sampler, eps, eta, delta, w)
+        logger.info(f"Decision: {result}, Number of calls: {_ncalls}")

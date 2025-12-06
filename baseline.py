@@ -81,7 +81,6 @@ def baseline(unknown_sampler, known_sampler, eps, eta, delta, w):
 
     dest = sum(max(0, 1 - known_sampler.pmf(x_i) / pest) for x_i, pest in pest_values) / t
     dest = float(dest)
-    logger.info(f"Estimated TV distance: {dest}")
 
     if dest > (eta + eps) / 2:
         return "reject", _ncalls
@@ -108,9 +107,6 @@ if __name__ == '__main__':
 
     if seed is not None:
         random.seed(seed)
-
-    file_handler = logging.FileHandler(f"{distribution}_{'_'.join(str(p) for p in params)}.log")
-    logger.addHandler(file_handler)
 
     if distribution == "binomial":
         if len(params) != 4:
